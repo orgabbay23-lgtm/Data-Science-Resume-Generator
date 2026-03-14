@@ -64,7 +64,7 @@ export const InitializationStep = ({
       githubUrl: values.githubUrl ?? '',
       portfolioUrl: values.portfolioUrl ?? '',
     })
-  }, [updateInitialization, values])
+  }, [updateInitialization, values, data.resumeLanguage])
 
   return (
     <form

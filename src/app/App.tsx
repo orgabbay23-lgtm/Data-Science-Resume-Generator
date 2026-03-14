@@ -287,7 +287,7 @@ export const App = () => {
           <AnimatePresence custom={motionDirection} mode="wait">
             <motion.section
               animate="center"
-              className="glass-panel rounded-[38px] px-5 py-6 sm:px-8 sm:py-8"
+              className="glass-panel rounded-[28px] sm:rounded-[38px] px-4 py-6 sm:px-8 sm:py-8"
               custom={motionDirection}
               exit="exit"
               initial="enter"

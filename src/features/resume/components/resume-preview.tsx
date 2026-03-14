@@ -551,7 +551,7 @@ export const ResumePreview = forwardRef<HTMLDivElement, ResumePreviewProps>(
 
     return (
       <div
-        className={`resume-paper rounded-[34px] px-7 py-8 md:px-10 md:py-11 ${alignClass}`}
+        className={`resume-paper rounded-[24px] sm:rounded-[34px] px-4 py-6 sm:px-7 sm:py-8 md:px-10 md:py-11 ${alignClass}`}
         dir={direction}
         ref={ref}
       >

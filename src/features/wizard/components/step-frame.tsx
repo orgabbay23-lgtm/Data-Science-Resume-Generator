@@ -23,7 +23,7 @@ export const StepFrame = ({
   const progress = `${Math.min((stepIndex / totalSteps) * 100, 100)}%`
 
   return (
-    <div className="flex min-h-[min(780px,calc(100vh-6rem))] flex-col justify-between">
+    <div className="flex min-h-[calc(100vh-10rem)] md:min-h-[min(780px,calc(100vh-6rem))] flex-col justify-between">
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center space-y-8">
         <div className="space-y-5 text-center">
           <div className="mx-auto inline-flex items-center gap-3 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-xs font-semibold tracking-[0.18em] text-slate-500">
