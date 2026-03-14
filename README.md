@@ -16,11 +16,11 @@
 </div>
 
 ## 🎯 The Pitch
-This isn't just another resume formatter; it's a high-octane **AI-powered career strategist**. Built specifically for the competitive Data Science landscape—with deep localization for the **Tech/Tel Aviv ecosystem**—it leverages Google Gemini 2.0 Flash to bridge the gap between technical complexity and recruiter-ready clarity. Every pixel and prompt is engineered to navigate both human bias and ATS single-column safety constraints.
+This isn't just another resume formatter; it's a high-octane **AI-powered career strategist**. Built specifically for the competitive Data Science landscape—with deep localization for the **Tech/Tel Aviv ecosystem**—it leverages Google Gemini 3.0 Flash to bridge the gap between technical complexity and recruiter-ready clarity. Every pixel and prompt is engineered to navigate both human bias and ATS single-column safety constraints.
 
 ## ✨ Core Features
 - **🌊 Zen Mode UI:** A distraction-free, gamified wizard experience powered by **Framer Motion** for silky-smooth transitions and intuitive data entry.
-- **🧠 Intelligent AI Synthesis:** Integrated with **Gemini 2.0 Flash** to transform raw bullet points into high-impact, XYZ-format achievements that speak the language of recruiters.
+- **🧠 Intelligent AI Synthesis:** Integrated with **Gemini 3.0 Flash** to transform raw bullet points into high-impact, XYZ-format achievements that speak the language of recruiters.
 - **🇮🇱 "Tachles" Localization:** Expertly tuned for the Israeli market, including dedicated sections for Military Service and localized formatting, without sacrificing global ATS compatibility.
 - **🌐 Global AI Actions:** Perform whole-resume optimizations, English-to-Hebrew translations, and RTL (Right-to-Left) adjustments with a single click—ensuring print-ready perfection in any language.
 
