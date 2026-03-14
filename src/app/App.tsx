@@ -17,6 +17,11 @@ import { transformResumeDataWithAi } from '../lib/gemini-service'
 import { createAudioCuePlayer } from '../lib/audio-cues'
 import { useToast } from '../components/ui/toast-context'
 import { useResumeStore } from '../store/resume-store'
+import { useAuthStore } from '../store/auth-store'
+import { useCloudSync } from '../hooks/use-cloud-sync'
+import { AuthScreen } from '../features/auth/components/auth-screen'
+import { auth } from '../lib/firebase'
+import { signOut } from 'firebase/auth'
 
 const stepMotionVariants = {
   enter: (direction: number) => ({
@@ -97,6 +102,7 @@ const renderStep = (
 }
 
 export const App = () => {
+  const { user, loading } = useAuthStore()
   const data = useResumeStore((state) => state.data)
   const currentStep = useResumeStore((state) => state.currentStep)
   const nextStep = useResumeStore((state) => state.nextStep)
@@ -104,6 +110,8 @@ export const App = () => {
   const replaceResumeData = useResumeStore((state) => state.replaceResumeData)
   const resetResume = useResumeStore((state) => state.resetResume)
   const { pushToast } = useToast()
+  
+  const { syncStatus } = useCloudSync()
 
   const [editMode, setEditMode] = useState(false)
   const [isOptimizingResume, setIsOptimizingResume] = useState(false)
@@ -225,10 +233,51 @@ export const App = () => {
     skillCount,
   }
 
+  const handleSignOut = () => {
+    signOut(auth)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center zen-shell">
+        <div className="animate-pulse text-slate-500 font-medium tracking-tight">
+          טוען מערכת...
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen />
+  }
+
   return (
-    <main className="zen-shell min-h-screen" dir="rtl">
+    <main className="zen-shell min-h-screen relative" dir="rtl">
+      {/* Top Header for Auth & Sync Status */}
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleSignOut}
+            className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            התנתק
+          </button>
+        </div>
+        <div className="flex items-center gap-2 text-sm font-medium">
+          {syncStatus === 'saving' && (
+            <span className="text-slate-500 animate-pulse">שומר בענן...</span>
+          )}
+          {syncStatus === 'saved' && (
+            <span className="text-cyan-600">נשמר בענן ✓</span>
+          )}
+          {syncStatus === 'error' && (
+            <span className="text-rose-500">שגיאה בשמירה</span>
+          )}
+        </div>
+      </header>
+
       <div
-        className={`mx-auto flex w-full px-4 sm:px-6 ${
+        className={`mx-auto flex w-full px-4 sm:px-6 pt-16 ${
           isReviewStep
             ? 'max-w-6xl flex-col py-6'
             : 'min-h-screen max-w-4xl items-center justify-center py-8'
