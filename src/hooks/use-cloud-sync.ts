@@ -11,7 +11,7 @@ export const useCloudSync = () => {
   
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const isInitialLoad = useRef(true)
-  const saveTimeout = useRef<NodeJS.Timeout | null>(null)
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Fetch data on login
   useEffect(() => {
