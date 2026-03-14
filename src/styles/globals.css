@@ -1,0 +1,145 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "tailwindcss";
+@import "./print.css";
+
+:root {
+  --shell-bg:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.96), transparent 34%),
+    radial-gradient(circle at 18% 16%, rgba(8, 145, 178, 0.14), transparent 24%),
+    radial-gradient(circle at 84% 18%, rgba(52, 211, 153, 0.12), transparent 22%),
+    linear-gradient(180deg, #f8fbfd 0%, #eff5f8 52%, #f8faf7 100%);
+  --panel-border: rgba(255, 255, 255, 0.82);
+  --panel-shadow: 0 36px 96px -52px rgba(15, 23, 42, 0.34);
+  color: #0f172a;
+  background: var(--shell-bg);
+  font-family: "Inter", "Segoe UI", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  scroll-behavior: smooth;
+  color-scheme: light;
+  background: var(--shell-bg);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: #0f172a;
+  background: var(--shell-bg);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(8, 145, 178, 0.16);
+  color: #082f49;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  min-width: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.zen-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.zen-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.66), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 22%);
+  pointer-events: none;
+}
+
+.glass-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(247, 250, 252, 0.9)),
+    radial-gradient(circle at top left, rgba(8, 145, 178, 0.06), transparent 28%);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    var(--panel-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.18), transparent 34%),
+    radial-gradient(circle at top right, rgba(8, 145, 178, 0.06), transparent 20%);
+  pointer-events: none;
+}
+
+.resume-paper {
+  width: 100%;
+  max-width: 794px;
+  margin: 0 auto;
+  border: 1px solid rgba(203, 213, 225, 0.82);
+  background: #ffffff;
+  overflow-wrap: anywhere;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  box-shadow:
+    0 36px 90px -42px rgba(15, 23, 42, 0.24),
+    0 10px 20px -16px rgba(15, 23, 42, 0.12);
+}
+
+.resume-section-title {
+  border-bottom: 1px solid #dbe5f0;
+  padding-bottom: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.editable-inline {
+  border-radius: 0.9rem;
+  border: 1px solid transparent;
+  background: transparent;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.editable-inline:focus {
+  outline: none;
+}
+
+.editable-inline[data-editable="true"]:hover,
+.editable-inline[data-editable="true"]:focus {
+  border-color: rgba(8, 145, 178, 0.32);
+  background: rgba(236, 254, 255, 0.82);
+  box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.1);
+}
