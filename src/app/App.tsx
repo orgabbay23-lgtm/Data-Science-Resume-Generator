@@ -20,6 +20,7 @@ import { useResumeStore } from '../store/resume-store'
 import { useAuthStore } from '../store/auth-store'
 import { useCloudSync } from '../hooks/use-cloud-sync'
 import { AuthScreen } from '../features/auth/components/auth-screen'
+import { ApiKeyModal } from '../components/ui/api-key-modal'
 import { auth } from '../lib/firebase'
 import { signOut } from 'firebase/auth'
 
@@ -102,7 +103,7 @@ const renderStep = (
 }
 
 export const App = () => {
-  const { user, loading } = useAuthStore()
+  const { user, loading, isAuthLoading, setIsApiKeyModalOpen } = useAuthStore()
   const data = useResumeStore((state) => state.data)
   const currentStep = useResumeStore((state) => state.currentStep)
   const nextStep = useResumeStore((state) => state.nextStep)
@@ -138,6 +139,18 @@ export const App = () => {
     document.documentElement.lang = 'he'
     document.body.dir = 'rtl'
   }, [])
+
+  useEffect(() => {
+    const handleFallback = () => {
+      pushToast({
+        tone: 'info',
+        title: 'עומס זמני',
+        message: 'עקב עומס זמני, נעשה שימוש במודל הגיבוי (2.5 Flash)',
+      })
+    }
+    window.addEventListener('gemini-fallback-toast', handleFallback)
+    return () => window.removeEventListener('gemini-fallback-toast', handleFallback)
+  }, [pushToast])
 
   useEffect(() => {
     if (currentStep === lastStepRef.current) {
@@ -237,7 +250,7 @@ export const App = () => {
     signOut(auth)
   }
 
-  if (loading) {
+  if (isAuthLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center zen-shell">
         <div className="animate-pulse text-slate-500 font-medium tracking-tight">
@@ -255,12 +268,19 @@ export const App = () => {
     <main className="zen-shell min-h-screen relative" dir="rtl">
       {/* Top Header for Auth & Sync Status */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={handleSignOut}
             className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
           >
             התנתק
+          </button>
+          <button
+            onClick={() => setIsApiKeyModalOpen(true)}
+            className="text-xs sm:text-sm font-medium text-cyan-600 hover:text-cyan-700 transition-colors flex items-center gap-1.5 bg-cyan-50 px-2 sm:px-3 py-1.5 rounded-full"
+          >
+            <span>🔑</span>
+            עדכן מפתח AI
           </button>
         </div>
         <div className="flex items-center gap-2 text-sm font-medium">
@@ -314,6 +334,8 @@ export const App = () => {
           ) : null}
         </div>
       </div>
+      
+      <ApiKeyModal />
     </main>
   )
 }

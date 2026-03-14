@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'motion/react'
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
@@ -30,6 +31,35 @@ export const AuthScreen = () => {
   const [rememberMe, setRememberMe] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const { pushToast } = useToast()
+
+  useEffect(() => {
+    const checkRedirect = async () => {
+      setIsLoading(true)
+      try {
+        const result = await getRedirectResult(auth)
+        if (result) {
+          pushToast({
+            tone: 'success',
+            title: 'התחברת בהצלחה',
+            message: 'התחברת באמצעות חשבון Google.',
+          })
+        }
+      } catch (error: unknown) {
+        const err = error as { message?: string, code?: string };
+        if (err.code !== 'auth/popup-closed-by-user') {
+          pushToast({
+            tone: 'error',
+            title: 'שגיאה בהתחברות',
+            message: err.message || 'אירעה שגיאה בהתחברות עם Google.',
+          })
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    checkRedirect()
+  }, [pushToast])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,27 +97,19 @@ export const AuthScreen = () => {
   }
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true)
     try {
       const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence
       await setPersistence(auth, persistenceType)
-      await signInWithPopup(auth, googleProvider)
-      pushToast({
-        tone: 'success',
-        title: 'התחברת בהצלחה',
-        message: 'התחברת באמצעות חשבון Google.',
-      })
+      await signInWithRedirect(auth, googleProvider)
     } catch (error: unknown) {
       const err = error as { message?: string, code?: string };
       if (err.code !== 'auth/popup-closed-by-user') {
         pushToast({
           tone: 'error',
           title: 'שגיאה בהתחברות',
-          message: err.message || 'אירעה שגיאה בהתחברות עם Google.',
+          message: err.message || 'אירעה שגיאה בבקשת התחברות עם Google.',
         })
       }
-    } finally {
-      setIsLoading(false)
     }
   }
 

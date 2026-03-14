@@ -8,6 +8,7 @@ import type {
   TargetTrack,
 } from '../types/resume'
 import { splitMultilineText } from './utils'
+import { useAuthStore } from '../store/auth-store'
 
 export type GeminiFieldKind =
   | 'summary'
@@ -48,9 +49,9 @@ interface TransformResumeDataOptions {
   mode: ResumeTransformationMode
 }
 
-const GEMINI_MODEL = 'gemini-3-flash-preview'
+const BASE_RESEARCH_SYSTEM_INSTRUCTION = `CRITICAL INSTRUCTION: You are a professional resume writer. No matter what language the input is in, YOUR ENTIRE GENERATED OUTPUT MUST BE STRICTLY IN PROFESSIONAL ENGLISH. DO NOT OUTPUT A SINGLE WORD OF HEBREW.
 
-const BASE_RESEARCH_SYSTEM_INSTRUCTION = `Act as an Elite Tel Aviv Tech Recruiter and senior technical resume writer for the Israeli tech ecosystem in 2026. The user interface may be Hebrew and the raw candidate input may be Hebrew, English, or mixed.
+Act as an Elite Tel Aviv Tech Recruiter and senior technical resume writer for the Israeli tech ecosystem in 2026. The user interface may be Hebrew and the raw candidate input may be Hebrew, English, or mixed.
 
 Mandatory rules:
 - Base every decision strictly on the research reference supplied below.
@@ -76,27 +77,27 @@ Return valid JSON only. Do not wrap the JSON in markdown or add any commentary.`
 
 const fieldGuidance: Record<GeminiFieldKind, string> = {
   summary:
-    'Return 2 or 3 sentences maximum. Name the exact target role, stack, and proof of capability. Keep it tight enough for a one-page Israeli resume.',
+    'Return 2 or 3 sentences maximum in English. Name the exact target role, stack, and proof of capability. Keep it tight enough for a one-page Israeli resume.',
   bullet:
-    'Return exactly one resume bullet sentence. Lead with ownership and end with concrete impact when the source text supports it.',
+    'Return exactly one resume bullet sentence in English. Lead with ownership and end with concrete impact when the source text supports it.',
   headline:
-    'Return one concise resume-safe title or headline in 3 to 8 words.',
+    'Return one concise resume-safe title or headline in English in 3 to 8 words.',
   phrase:
-    'Return one concise technical phrase or sentence fragment without filler.',
-  list: 'Return only a concise comma-separated list.',
+    'Return one concise technical phrase or sentence fragment in English without filler.',
+  list: 'Return only a concise comma-separated list in English.',
 }
 
 const structuredGuidance: Record<StructuredResumeSynthesisKind, string> = {
   military:
-    'Return 1 or 2 resume bullet lines. Translate the service into civilian, ATS-safe business language. Emphasize data, automation, decision support, leadership, logistics, execution, or operational readiness only when the provided facts support it.',
+    'Return 1 or 2 resume bullet lines in English. Translate the service into civilian, ATS-safe business language. Emphasize data, automation, decision support, leadership, logistics, execution, or operational readiness only when the provided facts support it.',
   skills:
-    'Return 1 or 2 resume bullet lines that synthesize the selected technical stack into a sharp recruiter-facing capability snapshot. Focus on the stack and the delivery capability it implies. Do not invent projects, metrics, or years.',
+    'Return 1 or 2 resume bullet lines in English that synthesize the selected technical stack into a sharp recruiter-facing capability snapshot. Focus on the stack and the delivery capability it implies. Do not invent projects, metrics, or years.',
   project:
-    'Return 1 or 2 resume bullet lines that synthesize the project role, stack, goal, and project facts into a recruiter-ready summary. Do not invent outcomes or metrics.',
+    'Return 1 or 2 resume bullet lines in English that synthesize the project role, stack, goal, and project facts into a recruiter-ready summary. Do not invent outcomes or metrics.',
   experience:
-    'Return 1 or 2 resume bullet lines that synthesize the role, company context, stack, and ownership area into a direct Israeli-market experience summary. Do not invent metrics, scale, or scope.',
+    'Return 1 or 2 resume bullet lines in English that synthesize the role, company context, stack, and ownership area into a direct Israeli-market experience summary. Do not invent metrics, scale, or scope.',
   education:
-    'Return one concise line that captures the academic focus, relevant coursework, and specialization in a recruiter-friendly way. Do not invent courses, honors, research, or achievements.',
+    'Return one concise line in English that captures the academic focus, relevant coursework, and specialization in a recruiter-friendly way. Do not invent courses, honors, research, or achievements.',
 }
 
 const trackLabels: Record<TargetTrack, string> = {
@@ -110,19 +111,21 @@ const employerLabels: Record<TargetEmployerType, string> = {
   mnc: 'Multinational R&D Center',
 }
 
+let clientKey = ''
 let client: GoogleGenerativeAI | null = null
 
 const getClient = () => {
-  if (client) {
+  const apiKey = useAuthStore.getState().geminiApiKey
+
+  if (!apiKey) {
+    throw new Error('אנא הזן מפתח אישי של Gemini כדי להשתמש בתכונות ה-AI.')
+  }
+
+  if (client && clientKey === apiKey) {
     return client
   }
 
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-
-  if (!apiKey) {
-    throw new Error('Missing VITE_GEMINI_API_KEY.')
-  }
-
+  clientKey = apiKey
   client = new GoogleGenerativeAI(apiKey)
   return client
 }
@@ -169,10 +172,42 @@ const extractJsonPayload = (value: string) => {
   }
 }
 
-const outputLanguageInstruction = (language: ResumeLanguage) =>
-  language === 'he'
-    ? 'Output language: Hebrew only. Use professional Hebrew suited to the Israeli tech market, while keeping product names, library names, and standard technology names in English when that is the accepted professional norm.'
-    : 'Output language: English only. Use flawless business English suited to Israeli tech recruiters.'
+const outputLanguageInstruction = () =>
+  'CRITICAL INSTRUCTION: YOUR ENTIRE GENERATED OUTPUT MUST BE STRICTLY IN PROFESSIONAL ENGLISH. DO NOT OUTPUT A SINGLE WORD OF HEBREW. Use flawless business English suited to Israeli tech recruiters.'
+
+const executeWithFallback = async (systemInstruction: string, prompt: string) => {
+  const client = getClient()
+  const primaryModel = client.getGenerativeModel({
+    model: 'gemini-3-flash-preview',
+    systemInstruction,
+  })
+
+  try {
+    return await primaryModel.generateContent(prompt)
+  } catch (error: any) {
+    const errMsg = error?.message?.toLowerCase() || ''
+    const status = error?.status || error?.response?.status
+
+    if (
+      status === 429 ||
+      errMsg.includes('429') ||
+      errMsg.includes('quota') ||
+      errMsg.includes('exhausted') ||
+      errMsg.includes('limit')
+    ) {
+      window.dispatchEvent(new CustomEvent('gemini-fallback-toast'))
+      
+      const backupModel = client.getGenerativeModel({
+        model: 'gemini-2.5-flash',
+        systemInstruction,
+      })
+      
+      return await backupModel.generateContent(prompt)
+    }
+    
+    throw error
+  }
+}
 
 const generateText = async ({
   prompt,
@@ -181,23 +216,12 @@ const generateText = async ({
   prompt: string
   multiline?: boolean
 }) => {
-  const model = getClient().getGenerativeModel({
-    model: GEMINI_MODEL,
-    systemInstruction: TEXT_SYSTEM_INSTRUCTION,
-  })
-
-  const result = await model.generateContent(prompt)
-
+  const result = await executeWithFallback(TEXT_SYSTEM_INSTRUCTION, prompt)
   return sanitizeModelOutput(result.response.text(), multiline)
 }
 
 const generateResumeJsonDraft = async (prompt: string) => {
-  const model = getClient().getGenerativeModel({
-    model: GEMINI_MODEL,
-    systemInstruction: JSON_SYSTEM_INSTRUCTION,
-  })
-
-  const result = await model.generateContent(prompt)
+  const result = await executeWithFallback(JSON_SYSTEM_INSTRUCTION, prompt)
   return resumeDataSchema.parse(extractJsonPayload(result.response.text()))
 }
 
@@ -327,7 +351,7 @@ export const improveResumeText = async ({
     prompt: `
 Target track: ${trackLabels[track]}
 Target company type: ${employerLabels[employer]}
-${outputLanguageInstruction(language)}
+${outputLanguageInstruction()}
 User interface language: ${language === 'he' ? 'Hebrew' : 'English'}
 Field type: ${kind}
 Field label: ${label ?? 'Resume field'}
@@ -360,7 +384,7 @@ export const synthesizeResumeTextFromStructuredData = async ({
     prompt: `
 Target track: ${trackLabels[track]}
 Target company type: ${employerLabels[employer]}
-${outputLanguageInstruction(language)}
+${outputLanguageInstruction()}
 User interface language: ${language === 'he' ? 'Hebrew' : 'English'}
 Structured task type: ${kind}
 Field label: ${label ?? 'Structured resume synthesis'}
@@ -378,13 +402,15 @@ export const transformResumeDataWithAi = async ({
   data,
   mode,
 }: TransformResumeDataOptions) => {
-  const targetLanguage: ResumeLanguage = mode === 'translateToHebrew' ? 'he' : data.resumeLanguage
+  const targetLanguage: ResumeLanguage = 'en'
   const taskInstruction =
     mode === 'translateToHebrew'
-      ? `Translate all natural-language resume content fields into professional Hebrew. Keep URLs, email addresses, phone numbers, dates, ids, enum-like codes, and standard technology names accurate. When a technology or library is normally written in English in Israeli tech, leave it in English. Set resumeLanguage to "he".`
-      : `Review the entire resume and improve the wording in its current language (${targetLanguage === 'he' ? 'Hebrew' : 'English'}). Fix typos, tighten phrasing to Israeli tech standards, and keep the writing direct, concise, and impact-driven. Set resumeLanguage to "${targetLanguage}".`
+      ? `Translate all natural-language resume content fields into professional English. Keep URLs, email addresses, phone numbers, dates, ids, enum-like codes, and standard technology names accurate. Set resumeLanguage to "en".`
+      : `Review the entire resume and improve the wording in professional English. Fix typos, tighten phrasing to Israeli tech standards, and keep the writing direct, concise, and impact-driven. Set resumeLanguage to "en".`
 
   const draft = await generateResumeJsonDraft(`
+CRITICAL INSTRUCTION: YOUR ENTIRE GENERATED OUTPUT MUST BE STRICTLY IN PROFESSIONAL ENGLISH. DO NOT OUTPUT A SINGLE WORD OF HEBREW.
+
 Task:
 ${taskInstruction}
 

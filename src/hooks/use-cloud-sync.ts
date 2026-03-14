@@ -6,6 +6,9 @@ import { useResumeStore } from '../store/resume-store'
 
 export const useCloudSync = () => {
   const user = useAuthStore((state) => state.user)
+  const geminiApiKey = useAuthStore((state) => state.geminiApiKey)
+  const setGeminiApiKey = useAuthStore((state) => state.setGeminiApiKey)
+  const setIsHydrated = useAuthStore((state) => state.setIsHydrated)
   const data = useResumeStore((state) => state.data)
   const replaceResumeData = useResumeStore((state) => state.replaceResumeData)
   
@@ -23,19 +26,24 @@ export const useCloudSync = () => {
         const docSnap = await getDoc(docRef)
         if (docSnap.exists()) {
           const cloudData = docSnap.data().resumeData
+          const apiKey = docSnap.data().geminiApiKey
           if (cloudData) {
             replaceResumeData(cloudData)
+          }
+          if (apiKey) {
+            setGeminiApiKey(apiKey)
           }
         }
       } catch (error) {
         console.error('Failed to fetch resume data from cloud', error)
       } finally {
         isInitialLoad.current = false
+        setIsHydrated(true)
       }
     }
 
     fetchData()
-  }, [user, replaceResumeData])
+  }, [user, replaceResumeData, setGeminiApiKey, setIsHydrated])
 
   // Debounced auto-save
   useEffect(() => {
@@ -50,7 +58,7 @@ export const useCloudSync = () => {
     saveTimeout.current = setTimeout(async () => {
       try {
         const docRef = doc(db, 'users', user.uid)
-        await setDoc(docRef, { resumeData: data }, { merge: true })
+        await setDoc(docRef, { resumeData: data, geminiApiKey }, { merge: true })
         setSyncStatus('saved')
         setTimeout(() => setSyncStatus('idle'), 2000)
       } catch (error) {
@@ -64,7 +72,7 @@ export const useCloudSync = () => {
         clearTimeout(saveTimeout.current)
       }
     }
-  }, [user, data])
+  }, [user, data, geminiApiKey])
 
   return { syncStatus }
 }
